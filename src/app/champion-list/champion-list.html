@@ -1,0 +1,28 @@
+<div class="stats-container">
+    <h2>🎮 League of Legends Champions</h2>
+    @if (championService.data()) {
+    <div class="data">
+        <div class="search-box">
+            <input
+                type="text"
+                placeholder="Szukaj championów..."
+                [(ngModel)]="searchQuery"
+                class="search-input"
+            />
+        </div>
+
+        <div class="champions-list">
+            <div class="grid">
+                @for (champ of filteredChampions(); track champ.name) {
+                <div class="champion-card" [routerLink]="['/champion', champ.name]">
+                    <img [src]="champ.icon" [alt]="champ.displayName" />
+                    <p class="champion-name">{{ champ.displayName }}</p>
+                </div>
+                } @empty {
+                    <p class="no-results">Brak wyników dla wyszukiwania</p>
+                }
+            </div>
+        </div>
+    </div>
+    }
+</div>

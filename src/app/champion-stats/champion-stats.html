@@ -1,0 +1,23 @@
+<div class="stats-container">
+  <a href="/" class="back-button">← Wróć</a>
+
+  @if (loading()) {
+    <p class="loading">⏳ Ładowanie...</p>
+  }
+
+  @if (!loading() && champion()) {
+    <div class="champion-details">
+      <div class="champion-header">
+        <img [src]="champion()!.icon" [alt]="champion()!.displayName" class="champion-icon" />
+        <div class="champion-info">
+          <h1>{{ champion()!.displayName }}</h1>
+          <p class="champion-code">{{ champion()!.name }}</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (!loading() && !champion()) {
+    <p class="error">❌ Champion nie znaleziony</p>
+  }
+</div>
