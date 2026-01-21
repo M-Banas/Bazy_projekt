@@ -3,61 +3,51 @@
 ## Instalacja
 
 1. Zainstaluj zależności:
-```bash
-cd backend
-npm install
-```
+   ```bash
+   cd backend
+   npm install
+   ```
 
 2. Skonfiguruj PostgreSQL:
    - Zainstaluj PostgreSQL
-   - Utwórz bazę danych `angular_test_db`
+   - Utwórz bazę danych (np. `angular_test_db` lub zgodnie z `.env`)
    - Uruchom skrypt inicjalizacyjny:
-```bash
-psql -U postgres -f database/init.sql
-```
+     ```bash
+     psql -U <db_user> -d <db_name> -f database/init.sql
+     ```
+   - (Opcjonalnie) Użyj `init2.sql`, jeśli chcesz mieć triggery i dodatkowe funkcje.
 
 3. Skonfiguruj zmienne środowiskowe:
-   - Dostosuj ustawienia bazy danych w pliku `.env`
+   - Skopiuj plik `.env.example` do `.env` i uzupełnij danymi dostępowymi do bazy oraz kluczami API.
 
 ## Uruchomienie
 
-### Tryb produkcyjny:
 ```bash
 npm start
 ```
 
-### Tryb deweloperski (z auto-restartem):
-```bash
-npm run dev
-```
-
-Serwer domyślnie działa na porcie 3000: `http://localhost:3000`
+Serwer domyślnie działa na porcie określonym w `.env` (np. `http://localhost:5201`).
 
 ## Endpointy API
 
-### Autoryzacja
-- `POST /api/auth/register` - Rejestracja nowego użytkownika
-- `POST /api/auth/login` - Logowanie użytkownika
-
 ### Champions
 - `GET /api/champions` - Pobierz wszystkich championów
-- `GET /api/champions/:id` - Pobierz championsa po ID
-- `POST /api/champions` - Utwórz nowego championsa (wymaga tokena)
-- `PUT /api/champions/:id` - Aktualizuj championsa (wymaga tokena)
-- `DELETE /api/champions/:id` - Usuń championsa (wymaga tokena)
+- `GET /api/champions/:id` - Pobierz championa po ID
+- `POST /api/champions` - Utwórz nowego championa
+- `PUT /api/champions/:id` - Aktualizuj championa
+- `DELETE /api/champions/:id` - Usuń championa
 
 ### Users
-- `GET /api/users/profile` - Pobierz profil użytkownika (wymaga tokena)
-- `PUT /api/users/profile` - Aktualizuj profil użytkownika (wymaga tokena)
+- `GET /api/users` - Pobierz listę użytkowników
+- `POST /api/users` - Utwórz nowego użytkownika
 
-### Health Check
-- `GET /api/health` - Sprawdź status serwera
+### Statystyki i inne zasoby
+- `GET /api/stats/winrate` - Statystyki winrate championów
+- `GET /api/stats/top-items` - Najczęściej używane przedmioty
+- `GET /api/stats/patch-history` - Historia winrate po patchach
 
-## Autoryzacja
+## Dodatkowe informacje
 
-Chronione endpointy wymagają tokena JWT w nagłówku:
-```
-Authorization: Bearer <your_token>
-```
-
-Token otrzymujesz po zalogowaniu.
+- Plik `.env.example` zawiera przykładową konfigurację środowiska.
+- Klucz Riot API możesz uzyskać na https://developer.riotgames.com/
+- Struktura bazy danych i widoki opisane są w plikach `database/init.sql`.
