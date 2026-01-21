@@ -1,5 +1,11 @@
 # Backend Node.js z PostgreSQL
 
+
+## Wykonaj najpierw
+ng build
+w glownym katalogu projektu aby zbudowac aplikacje
+
+
 ## Instalacja
 
 1. Zainstaluj zależności:
