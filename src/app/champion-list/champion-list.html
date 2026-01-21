@@ -1,22 +1,39 @@
 <div class="stats-container">
-    <h2>🎮 League of Legends Champions</h2>
-    @if (championService.data()) {
+    <h2>Postaci League of Legends</h2>
+    @if (loading()) {
+        <p>Ładowanie championów...</p>
+    } @else {
     <div class="data">
         <div class="search-box">
             <input
                 type="text"
-                placeholder="Szukaj championów..."
-                [(ngModel)]="searchQuery"
+                placeholder="Szukaj postaci..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
                 class="search-input"
             />
         </div>
 
         <div class="champions-list">
             <div class="grid">
-                @for (champ of filteredChampions(); track champ.name) {
-                <div class="champion-card" [routerLink]="['/champion', champ.name]">
-                    <img [src]="champ.icon" [alt]="champ.displayName" />
-                    <p class="champion-name">{{ champ.displayName }}</p>
+                @for (champ of filteredChampions(); track champ.postac_id) {
+                <div class="champion-card" [routerLink]="['/champion', champ.postac_id]">
+                    @if (authService.isLoggedIn()) {
+                    <button 
+                      class="favorite-btn" 
+                      [class.is-favorite]="isFavorite(champ.postac_id)"
+                      (click)="toggleFavorite($event, champ.postac_id)"
+                      title="Dodaj do ulubionych"
+                    >
+                      {{ isFavorite(champ.postac_id) ? '★' : '☆' }}
+                    </button>
+                    }
+                    <img 
+                      [src]="champ.icon" 
+                      [alt]="champ.nazwa"
+                      (error)="$event.target.src='default_icon.jpg'" 
+                    />
+                    <p class="champion-name">{{ champ.nazwa }}</p>
                 </div>
                 } @empty {
                     <p class="no-results">Brak wyników dla wyszukiwania</p>

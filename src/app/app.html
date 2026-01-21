@@ -1,1 +1,21 @@
+<header class="navbar">
+  <div class="navbar-container">
+    <a routerLink="/" class="navbar-brand">Champion App</a>
+    <div class="navbar-right">
+      @if (authService.isLoggedIn()) {
+        <a routerLink="/panel" class="navbar-panel-link">
+          <div class="user-info">
+            <span class="username">{{ authService.user()?.username }}</span>
+            @if (authService.isAdmin()) {
+              <span class="admin-badge">Admin</span>
+            }
+          </div>
+        </a>
+        <button class="navbar-logout-btn" (click)="onLogout()">Wyloguj</button>
+      } @else {
+        <button class="navbar-login-btn" (click)="onLogin()">Logowanie</button>
+      }
+    </div>
+  </div>
+</header>
 <router-outlet></router-outlet>

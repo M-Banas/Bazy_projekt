@@ -56,12 +56,51 @@ h2 {
   text-align: center;
   transition: all 0.3s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .champion-card:hover {
   border-color: #667eea;
   transform: translateY(-5px);
   box-shadow: 0 8px 12px rgba(102, 126, 234, 0.3);
+}
+
+.favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  padding: 0;
+  color: #999;
+}
+
+.favorite-btn:hover {
+  background: white;
+  border-color: #667eea;
+  color: #667eea;
+  transform: scale(1.1);
+}
+
+.favorite-btn.is-favorite {
+  color: #fbbf24;
+  border-color: #fbbf24;
+  background: white;
+}
+
+.favorite-btn.is-favorite:hover {
+  color: #f59e0b;
+  border-color: #f59e0b;
 }
 
 .champion-card img {

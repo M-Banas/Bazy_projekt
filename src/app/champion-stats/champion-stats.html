@@ -8,12 +8,197 @@
   @if (!loading() && champion()) {
     <div class="champion-details">
       <div class="champion-header">
-        <img [src]="champion()!.icon" [alt]="champion()!.displayName" class="champion-icon" />
+        <img 
+          [src]="champion()!.icon" 
+          [alt]="champion()!.displayName" 
+          class="champion-icon"
+          (error)="$event.target.src='default_icon.jpg'" 
+
+        />
         <div class="champion-info">
           <h1>{{ champion()!.displayName }}</h1>
-          <p class="champion-code">{{ champion()!.name }}</p>
+        </div>
+        <div class="patch-selector">
+          <label for="patch-dropdown">Patch:</label>
+          <select id="patch-dropdown" class="patch-dropdown" [value]="selectedPatch()" (change)="onPatchChange($event)">
+            @for (patch of patches(); track patch) {
+              <option [value]="patch">{{ patch }}</option>
+            }
+          </select>
         </div>
       </div>
+
+      <div class="stats-section">
+        <h2>Współczynnik Zwycięstwa</h2>
+        
+        @if (winrateLoading()) {
+          <p class="loading">⏳ Ładowanie statystyk...</p>
+        }
+        
+        @if (!winrateLoading() && winrateData()) {
+          <div class="stats-info">
+            <p><strong>Rozegrane mecze:</strong> {{ winrateData().overall.total_games }}</p>
+          </div>
+          
+          <div class="win-rate-charts">
+            <div class="chart-card">
+              <h3>Ogólny Winrate</h3>
+              <div class="chart-container">
+                <svg class="circular-chart" viewBox="0 0 100 100">
+                  <circle class="circle-bg" cx="50" cy="50" r="40" />
+                  <circle class="circle-progress overall" cx="50" cy="50" r="40" 
+                          [attr.stroke-dasharray]="calculateProgress(winrateData().overall.winrate) + ' 251.2'" />
+                </svg>
+                <div class="chart-percentage">{{ winrateData().overall.winrate }}%</div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <h3>Strona Czerwona</h3>
+              <div class="chart-container">
+                <svg class="circular-chart" viewBox="0 0 100 100">
+                  <circle class="circle-bg" cx="50" cy="50" r="40" />
+                  <circle class="circle-progress red-side" cx="50" cy="50" r="40" 
+                          [attr.stroke-dasharray]="calculateProgress(winrateData().red_side.winrate) + ' 251.2'" />
+                </svg>
+                <div class="chart-percentage">{{ winrateData().red_side.winrate }}%</div>
+              </div>
+              <p class="side-stats">{{ winrateData().red_side.wins }}/{{ winrateData().red_side.total_games }} wygranych</p>
+            </div>
+
+            <div class="chart-card">
+              <h3>Strona Niebieska</h3>
+              <div class="chart-container">
+                <svg class="circular-chart" viewBox="0 0 100 100">
+                  <circle class="circle-bg" cx="50" cy="50" r="40" />
+                  <circle class="circle-progress blue-side" cx="50" cy="50" r="40" 
+                          [attr.stroke-dasharray]="calculateProgress(winrateData().blue_side.winrate) + ' 251.2'" />
+                </svg>
+                <div class="chart-percentage">{{ winrateData().blue_side.winrate }}%</div>
+              </div>
+              <p class="side-stats">{{ winrateData().blue_side.wins }}/{{ winrateData().blue_side.total_games }} wygranych</p>
+            </div>
+          </div>
+        }
+        
+        @if (!winrateLoading() && !winrateData()) {
+          <p class="error">Brak danych statystycznych</p>
+        }
+      </div>
+
+      <!-- Historia Winrate po Patchach -->
+      @if (winrateHistory().length > 0) {
+        <div class="stats-section">
+          <h2>Historia Winrate</h2>
+          <div class="history-chart">
+            <svg class="line-chart" viewBox="0 0 800 300">
+              <!-- Osie -->
+              <line x1="50" y1="250" x2="750" y2="250" stroke="#333" stroke-width="2"/>
+              <line x1="50" y1="50" x2="50" y2="250" stroke="#333" stroke-width="2"/>
+              
+              <!-- Linie poziome (siatka) -->
+              <line x1="50" y1="50" x2="750" y2="50" stroke="#eee" stroke-width="1"/>
+              <line x1="50" y1="100" x2="750" y2="100" stroke="#eee" stroke-width="1"/>
+              <line x1="50" y1="150" x2="750" y2="150" stroke="#eee" stroke-width="1"/>
+              <line x1="50" y1="200" x2="750" y2="200" stroke="#eee" stroke-width="1"/>
+              
+              <!-- Etykiety Y -->
+              <text x="30" y="55" font-size="12" fill="#666">100%</text>
+              <text x="30" y="105" font-size="12" fill="#666">75%</text>
+              <text x="30" y="155" font-size="12" fill="#666">50%</text>
+              <text x="30" y="205" font-size="12" fill="#666">25%</text>
+              <text x="35" y="255" font-size="12" fill="#666">0%</text>
+              
+              <!-- Wykres liniowy -->
+              @for (item of winrateHistory(); track $index) {
+                @if ($index < winrateHistory().length - 1) {
+                  <line 
+                    [attr.x1]="50 + ($index * (700 / (winrateHistory().length - 1)))"
+                    [attr.y1]="250 - (item.winrate * 2)"
+                    [attr.x2]="50 + (($index + 1) * (700 / (winrateHistory().length - 1)))"
+                    [attr.y2]="250 - (winrateHistory()[$index + 1].winrate * 2)"
+                    stroke="#5383ec"
+                    stroke-width="3"
+                  />
+                }
+              }
+              
+              <!-- Punkty na wykresie -->
+              @for (item of winrateHistory(); track $index) {
+                <circle 
+                  [attr.cx]="50 + ($index * (700 / (winrateHistory().length - 1)))"
+                  [attr.cy]="250 - (item.winrate * 2)"
+                  r="5"
+                  fill="#5383ec"
+                />
+                <!-- Etykiety X (patche) -->
+                <text 
+                  [attr.x]="50 + ($index * (700 / (winrateHistory().length - 1)))"
+                  y="270"
+                  font-size="10"
+                  fill="#666"
+                  text-anchor="middle"
+                >{{ item.patch }}</text>
+                <!-- Wartości winrate -->
+                <text 
+                  [attr.x]="50 + ($index * (700 / (winrateHistory().length - 1)))"
+                  [attr.y]="240 - (item.winrate * 2)"
+                  font-size="10"
+                  fill="#5383ec"
+                  text-anchor="middle"
+                >{{ item.winrate }}%</text>
+              }
+            </svg>
+          </div>
+        </div>
+      }
+
+      <!-- Top 3 Przedmioty -->
+      @if (!topItemsLoading() && getDisplayedItems().length > 0) {
+        <div class="stats-section">
+          <div class="section-header">
+            <h2>{{ showAllItems() ? 'Wszystkie Przedmioty' : 'Top 3 Przedmioty' }}</h2>
+          </div>
+          <div class="items-grid" [class.expanded]="showAllItems()">
+            @for (itemData of getDisplayedItems(); track itemData.item.przedmiot_id) {
+              <div class="item-card">
+                <img 
+                  [src]="itemData.icon" 
+                  [alt]="itemData.name"
+                  class="item-icon"
+                  (error)="$event.target.src='https://via.placeholder.com/64x64/1a1a2e/eaeaea?text=Item'"
+                />
+                <h3>{{ itemData.name }}</h3>
+                <div class="item-stats">
+                  <p class="winrate">{{ itemData.item.winrate }}% WR</p>
+                  <p class="games">{{ itemData.item.games_count }} gier</p>
+                </div>
+              </div>
+            }
+          </div>
+          @if (allItems().length > 3) {
+            <div class="show-more-container">
+              <button class="show-more-btn" (click)="toggleShowAllItems()">
+                {{ showAllItems() ? '▲ Pokaż mniej' : '▼ Pokaż wszystkie (' + allItems().length + ')' }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      @if (topItemsLoading()) {
+        <div class="stats-section">
+          <h2>Przedmioty</h2>
+          <p class="loading">⏳ Ładowanie przedmiotów...</p>
+        </div>
+      }
+
+      @if (!topItemsLoading() && getDisplayedItems().length === 0) {
+        <div class="stats-section">
+          <h2>Przedmioty</h2>
+          <p class="error">Brak danych o przedmiotach (minimum 2 gry)</p>
+        </div>
+      }
     </div>
   }
 

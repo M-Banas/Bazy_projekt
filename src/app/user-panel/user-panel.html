@@ -1,0 +1,510 @@
+<div class="panel-container">
+  @if (authService.isLoggedIn()) {
+    <div class="panel-header">
+      <p class="welcome">Witaj, <strong>{{ authService.user()?.username }}</strong>!</p>
+    </div>
+
+    <!-- Sekcja Ulubionych Postaci dla wszystkich użytkowników -->
+    <div class="panel-section favorites-section">
+      <h2>Ulubione Postacie</h2>
+      @if (favoriteChampions().length > 0) {
+        <div class="favorites-grid">
+          @for (champ of favoriteChampions(); track champ.postac_id) {
+            <div class="favorite-card">
+              <button 
+                class="remove-favorite-btn" 
+                (click)="removeFavorite(champ.postac_id)"
+                title="Usuń z ulubionych"
+              >
+                ×
+              </button>
+              <a [routerLink]="['/champion', champ.postac_id]">
+                <img 
+                  [src]="champ.icon" 
+                  [alt]="champ.nazwa"
+                  (error)="$event.target.src='default_icon.jpg'" 
+                />
+                <p class="favorite-name">{{ champ.nazwa }}</p>
+              </a>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="empty-favorites">
+          Nie masz jeszcze ulubionych postaci. Dodaj je na <a [routerLink]="['/']">liście championów</a>!
+        </p>
+      }
+    </div>
+
+    @if (authService.isAdmin()) {
+      <!-- Panel Administratora -->
+      <div class="admin-panel">
+        <div class="panel-section">
+          <h2>Panel Administratora</h2>
+          <div class="admin-cards">
+            <div class="admin-card">
+              <div class="card-icon"></div>
+              <h3>Championi</h3>
+              <p>Edytuj dane championów</p>
+              <button class="card-btn" (click)="toggleChampionManager()">
+                {{ showChampionManager() ? 'Zamknij' : 'Zarządzaj' }}
+              </button>
+            </div>
+            <div class="admin-card">
+              <div class="card-icon"></div>
+              <h3>Mecze</h3>
+              <p>Dodawaj wyniki meczów</p>
+              <button class="card-btn" (click)="toggleMatchManager()">
+                {{ showMatchManager() ? 'Zamknij' : 'Zarządzaj' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        @if (showChampionManager()) {
+          <div class="panel-section champion-manager">
+            <h2>Zarządzanie Championami</h2>
+            
+            @if (successMessage()) {
+              <div class="message success-message">✅ {{ successMessage() }}</div>
+            }
+            @if (errorMessage()) {
+              <div class="message error-message">❌ {{ errorMessage() }}</div>
+            }
+
+            <div class="manager-grid">
+              <!-- Dodaj Championa -->
+              <div class="manager-card">
+                <h3>Dodaj Championa</h3>
+                <div class="form-group">
+                  <label>Nazwa:</label>
+                  <input 
+                    type="text" 
+                    [(ngModel)]="newChampionName" 
+                    placeholder="np. Ahri"
+                    class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>ID (Riot API):</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="newChampionId" 
+                    placeholder="np. 103"
+                    class="form-input">
+                </div>
+                <button class="action-btn add-btn" (click)="addChampion()">Dodaj</button>
+              </div>
+
+              <!-- Lista Championów -->
+              <div class="manager-card full-width">
+                <h3>Lista Championów ({{ championsFromDB().length }})</h3>
+                <div class="champion-list">
+                  @if (championsFromDB().length > 0) {
+                    @for (champ of championsFromDB().slice(0, 10); track champ.postac_id) {
+                      <div class="champion-item">
+                        <span><strong>{{ champ.nazwa }}</strong> (ID: {{ champ.postac_id }})</span>
+                      </div>
+                    }
+                  } @else {
+                    <p>Brak championów w bazie danych</p>
+                  }
+                </div>
+                <p class="list-note">Pokazano {{ championsFromDB().slice(0, 10).length }} z {{ championsFromDB().length }}</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (showMatchManager()) {
+          <div class="panel-section match-manager">
+            <h2>Zarządzanie Meczami</h2>
+            
+            @if (successMessage()) {
+              <div class="message success-message"> {{ successMessage() }}</div>
+            }
+            @if (errorMessage()) {
+              <div class="message error-message"> {{ errorMessage() }}</div>
+            }
+
+            <div class="match-form-container">
+              <div class="match-form-card">
+                <h3>Import Meczy z Riot API</h3>
+                <form class="import-form" (submit)="importMatches($event)">
+                  <div class="form-group">
+                    <label for="summoner-name">Riot ID (Nazwa#Tag):</label>
+                    <input 
+                      type="text" 
+                      id="summoner-name"
+                      [(ngModel)]="summonerName"
+                      name="summonerName"
+                      placeholder="np. Hide on bush#KR1"
+                      required
+                      class="form-input"
+                    />
+                    <small class="input-hint">Format: nazwa#tag (np. Player#EUW lub Hide on bush#KR1)</small>
+                  </div>
+                  
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="region">Region:</label>
+                      <select id="region" [(ngModel)]="region" name="region" class="form-input">
+                        <option value="europe">Europe (EUNE/EUW)</option>
+                        <option value="americas">Americas (NA/BR/LAN/LAS)</option>
+                        <option value="asia">Asia (KR/JP)</option>
+                      </select>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="match-count">Liczba meczy:</label>
+                      <input 
+                        type="number" 
+                        id="match-count"
+                        [(ngModel)]="matchCount"
+                        name="matchCount"
+                        min="1"
+                        max="100"
+                        value="20"
+                        class="form-input"
+                      />
+                    </div>
+                  </div>
+                  
+                  <button type="submit" class="action-btn add-btn" [disabled]="importing()">
+                    @if (importing()) {
+                      Importowanie...
+                    } @else {
+                      Importuj Mecze
+                    }
+                  </button>
+                </form>
+                
+                @if (importResult()) {
+                  <div class="import-result" [class.success]="importResult()?.success" [class.error]="!importResult()?.success">
+                    <p><strong>{{ importResult()?.message }}</strong></p>
+                    @if (importResult()?.stats) {
+                      <ul>
+                        <li>Zaimportowano: {{ importResult()?.stats.imported }}</li>
+                        <li>Pominięto (już istnieją): {{ importResult()?.stats.skipped }}</li>
+                        <li>Błędy: {{ importResult()?.stats.errors }}</li>
+                        <li>Łącznie: {{ importResult()?.stats.total }}</li>
+                      </ul>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Generowanie Losowych Meczy -->
+              <div class="match-form-card">
+                <h3>Generuj Losowe Mecze</h3>
+                <p class="card-description">Wygeneruj losowe mecze do testowania systemu</p>
+                <form class="import-form" (submit)="generateRandomMatches($event)">
+                  <div class="form-group">
+                    <label for="random-match-count">Liczba meczy do wygenerowania:</label>
+                    <input 
+                      type="number" 
+                      id="random-match-count"
+                      [(ngModel)]="randomMatchCount"
+                      name="randomMatchCount"
+                      min="1"
+                      max="500"
+                      value="50"
+                      class="form-input"
+                    />
+                    <small class="input-hint">Każdy mecz będzie miał 10 graczy z losowymi championami i przedmiotami</small>
+                  </div>
+                  
+                  <button type="submit" class="action-btn generate-btn" [disabled]="generatingMatches()">
+                    @if (generatingMatches()) {
+                      Generowanie...
+                    } @else {
+                      Generuj Mecze
+                    }
+                  </button>
+                </form>
+                
+                @if (generateResult()) {
+                  <div class="import-result success">
+                    <p><strong>{{ generateResult() }}</strong></p>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="match-form-container">
+              <div class="match-form-card">
+                <h3>Dodaj Nowy Mecz Ręcznie</h3>
+                
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Data:</label>
+                    <input 
+                      type="date" 
+                      [(ngModel)]="matchDate" 
+                      class="form-input"
+                      required>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>Wersja/Patch:</label>
+                    <input 
+                      type="text" 
+                      [(ngModel)]="matchVersion" 
+                      placeholder="np. 14.1"
+                      class="form-input"
+                      required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Czas Gry (w sekundach):</label>
+                    <input 
+                      type="number" 
+                      [(ngModel)]="matchWinTime" 
+                      placeholder="np. 1820"
+                      class="form-input"
+                      required>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>Zwycięzca:</label>
+                    <select [(ngModel)]="matchWinner" class="form-input">
+                      <option value="red">Czerwona Drużyna</option>
+                      <option value="blue">Niebieska Drużyna</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Czerwona Drużyna -->
+                <div class="team-section">
+                  <h4>Czerwona Drużyna</h4>
+                  @for (player of redPlayers(); track $index; let playerIdx = $index) {
+                    <div class="player-card">
+                      <div class="player-header">
+                        <strong>Gracz {{ playerIdx + 1 }}</strong>
+                        <small class="selected-count">Przedmioty: {{ player.items.length }}/6</small>
+                      </div>
+                      <div class="player-champion">
+                        <label>Champion:</label>
+                        <select [(ngModel)]="player.champion" class="form-input">
+                          <option value="">-- Wybierz championa --</option>
+                          @for (champ of championsFromDB(); track champ.postac_id) {
+                            <option [value]="champ.nazwa">{{ champ.nazwa }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="player-items-section">
+                        <label>Przedmioty (wybierz max 6):</label>
+                        <div class="items-scroll">
+                          @if (availableItems().length > 0) {
+                            @for (item of availableItems(); track 'red-' + $index + '-' + item.przedmiot_id) {
+                              <label class="item-checkbox" [class.disabled]="player.items.length >= 6 && !player.items.includes(item.przedmiot_id)">
+                                <input 
+                                  type="checkbox" 
+                                  [checked]="player.items.includes(item.przedmiot_id)"
+                                  (change)="toggleItemRed(playerIdx, item.przedmiot_id)"
+                                  [disabled]="player.items.length >= 6 && !player.items.includes(item.przedmiot_id)">
+                                <span class="item-name">{{ item.nazwa_przedmiotu }}</span>
+                              </label>
+                            }
+                          } @else {
+                            <p class="loading-text">Ładowanie przedmiotów...</p>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Niebieska Drużyna -->
+                <div class="team-section">
+                  <h4>Niebieska Drużyna</h4>
+                  @for (player of bluePlayers(); track $index; let playerIdx = $index) {
+                    <div class="player-card">
+                      <div class="player-header">
+                        <strong>Gracz {{ playerIdx + 1 }}</strong>
+                        <small class="selected-count">Przedmioty: {{ player.items.length }}/6</small>
+                      </div>
+                      <div class="player-champion">
+                        <label>Champion:</label>
+                        <select [(ngModel)]="player.champion" class="form-input">
+                          <option value="">-- Wybierz championa --</option>
+                          @for (champ of championsFromDB(); track champ.postac_id) {
+                            <option [value]="champ.nazwa">{{ champ.nazwa }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="player-items-section">
+                        <label>Przedmioty (wybierz max 6):</label>
+                        <div class="items-scroll">
+                          @if (availableItems().length > 0) {
+                            @for (item of availableItems(); track 'blue-' + $index + '-' + item.przedmiot_id) {
+                              <label class="item-checkbox" [class.disabled]="player.items.length >= 6 && !player.items.includes(item.przedmiot_id)">
+                                <input 
+                                  type="checkbox" 
+                                  [checked]="player.items.includes(item.przedmiot_id)"
+                                  (change)="toggleItemBlue(playerIdx, item.przedmiot_id)"
+                                  [disabled]="player.items.length >= 6 && !player.items.includes(item.przedmiot_id)">
+                                <span class="item-name">{{ item.nazwa_przedmiotu }}</span>
+                              </label>
+                            }
+                          } @else {
+                            <p class="loading-text">Ładowanie przedmiotów...</p>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label>API ID (opcjonalne):</label>
+                  <input 
+                    type="text" 
+                    [(ngModel)]="matchApiId" 
+                    placeholder="np. NA1_1234567890"
+                    class="form-input">
+                </div>
+
+                <button class="action-btn add-match-btn" (click)="addMatch()">
+                  Dodaj Mecz
+                </button>
+              </div>
+
+
+            </div>
+          </div>
+        }
+
+        <!-- Formularze surowe do wszystkich tabel (wymóg zaliczenia) -->
+        <div class="panel-section raw-forms">
+          <h2>Formularze (wszystkie tabele)</h2>
+          <div class="raw-grid">
+            <div class="raw-card">
+              <h3>Przedmioty</h3>
+              <input class="form-input" type="number" placeholder="przedmiot_id" [value]="rawPrzedmiotId()" (input)="rawPrzedmiotId.set($any($event.target).value)">
+              <input class="form-input" type="text" placeholder="nazwa_przedmiotu" [value]="rawPrzedmiotNazwa()" (input)="rawPrzedmiotNazwa.set($any($event.target).value)">
+              <button class="action-btn" (click)="savePrzedmiot()">Zapisz przedmiot</button>
+            </div>
+
+            <div class="raw-card">
+              <h3>Użytkownicy</h3>
+              <input class="form-input" type="text" placeholder="nazwa" [value]="rawUserName()" (input)="rawUserName.set($any($event.target).value)">
+              <input class="form-input" type="text" placeholder="hasło (plaintext)" [value]="rawUserPass()" (input)="rawUserPass.set($any($event.target).value)">
+              <label class="checkbox-inline">
+                <input type="checkbox" [checked]="rawUserAdmin()" (change)="rawUserAdmin.set($any($event.target).checked)"> Admin
+              </label>
+              <button class="action-btn" (click)="saveUser()">Zapisz użytkownika</button>
+            </div>
+
+            <div class="raw-card">
+              <h3>Mecze</h3>
+              <input class="form-input" type="number" placeholder="mecz_id" [value]="rawMeczId()" (input)="rawMeczId.set($any($event.target).value)">
+              <input class="form-input" type="datetime-local" placeholder="data" [value]="rawMeczData()" (input)="rawMeczData.set($any($event.target).value)">
+              <input class="form-input" type="text" placeholder="wersja" [value]="rawMeczWersja()" (input)="rawMeczWersja.set($any($event.target).value)">
+              <input class="form-input" type="text" placeholder="czas_gry" [value]="rawMeczCzas()" (input)="rawMeczCzas.set($any($event.target).value)">
+              <label class="checkbox-inline">
+                <input type="checkbox" [checked]="rawMeczWygranaCzerw() === true" (change)="rawMeczWygranaCzerw.set($any($event.target).checked)"> wygrana_czerwonych
+              </label>
+              <input class="form-input" type="text" placeholder="api_id" [value]="rawMeczApi()" (input)="rawMeczApi.set($any($event.target).value)">
+              <button class="action-btn" (click)="saveMecz()">Zapisz mecz</button>
+            </div>
+
+            <div class="raw-card">
+              <h3>Uczestnicy_meczów</h3>
+              <input class="form-input" type="number" placeholder="uczestnik_id" [value]="rawUczId()" (input)="rawUczId.set($any($event.target).value)">
+              <input class="form-input" type="number" placeholder="mecz_id" [value]="rawUczMeczId()" (input)="rawUczMeczId.set($any($event.target).value)">
+              <input class="form-input" type="number" placeholder="postac_id" [value]="rawUczPostacId()" (input)="rawUczPostacId.set($any($event.target).value)">
+              <label class="checkbox-inline">
+                <input type="checkbox" [checked]="rawUczCzerwoni() === true" (change)="rawUczCzerwoni.set($any($event.target).checked)"> czy_czerwoni
+              </label>
+              <input class="form-input" type="text" placeholder="przedmioty (np: 3003,3161,6653)" [value]="rawUczPrzedmioty()" (input)="rawUczPrzedmioty.set($any($event.target).value)">
+              <button class="action-btn" (click)="saveUczestnikWithItems()">Zapisz uczestnika + przedmioty</button>
+            </div>
+
+            <div class="raw-card">
+              <h3>uczestnicy_przedmioty</h3>
+              <input class="form-input" type="number" placeholder="uczestnik_id" [value]="rawUczPrzedUczId()" (input)="rawUczPrzedUczId.set($any($event.target).value)">
+              <input class="form-input" type="number" placeholder="przedmiot_id" [value]="rawUczPrzedPrzedId()" (input)="rawUczPrzedPrzedId.set($any($event.target).value)">
+              <button class="action-btn" (click)="saveUczestnikPrzedmiot()">Zapisz</button>
+            </div>
+
+            <div class="raw-card">
+              <h3>ulubione_postacie</h3>
+              <input class="form-input" type="text" placeholder="użytkownik_nazwa" [value]="rawUlubUser()" (input)="rawUlubUser.set($any($event.target).value)">
+              <input class="form-input" type="number" placeholder="postac_id" [value]="rawUlubPostac()" (input)="rawUlubPostac.set($any($event.target).value)">
+              <button class="action-btn" (click)="saveUlubiona()">Zapisz</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raporty oparte o widoki -->
+        <div class="panel-section reports">
+          <h2>Raporty (widoki)</h2>
+          <div class="reports-grid">
+            <div class="report-card">
+              <h3>Winrate postaci</h3>
+              <div>
+                <table>
+                  <thead><tr><th>ID</th><th>Nazwa</th><th>Gry</th><th>Wygrane</th><th>WR%</th></tr></thead>
+                  <tbody>
+                    @for (row of reportWinrate(); track row.postac_id) {
+                      <tr>
+                        <td>{{ row.postac_id }}</td>
+                        <td>{{ row.nazwa }}</td>
+                        <td>{{ row.gry }}</td>
+                        <td>{{ row.wygrane }}</td>
+                        <td>{{ row.winrate }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="report-card">
+              <h3>Top przedmioty</h3>
+              <div>
+                <table>
+                  <thead><tr><th>Postać</th><th>Przedmiot</th><th>Gry</th><th>Wygrane</th><th>WR%</th></tr></thead>
+                  <tbody>
+                    @for (row of reportTopItems(); track row.postac_id + '-' + row.przedmiot_id) {
+                      <tr>
+                        <td>{{ row.postac_nazwa }}</td>
+                        <td>{{ row.nazwa_przedmiotu }}</td>
+                        <td>{{ row.gry }}</td>
+                        <td>{{ row.wygrane }}</td>
+                        <td>{{ row.winrate }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="report-card">
+              <h3>Statystyka patchy</h3>
+              <div>
+                <table>
+                  <thead><tr><th>Patch</th><th>Mecze</th><th>Wygrane czerwonych</th><th>% Czerwonych</th><th>Wygrane niebieskich</th><th>% Niebieskich</th></tr></thead>
+                  <tbody>
+                    @for (row of reportPatches(); track row.wersja) {
+                      <tr>
+                        <td>{{ row.wersja }}</td>
+                        <td>{{ row.mecze }}</td>
+                        <td>{{ row.wygrane_czerwonych }}</td>
+                        <td>{{ row.procent_czerwonych }}%</td>
+                        <td>{{ row.wygrane_niebieskich }}</td>
+                        <td>{{ row.procent_niebieskich }}%</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

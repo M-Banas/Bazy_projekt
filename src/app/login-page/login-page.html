@@ -1,0 +1,20 @@
+<form name="Logowanie" (submit)="onSubmit($event)">
+  <input type="text" placeholder="login" name="login" [(ngModel)]="username" required>
+  <input type="password" placeholder="hasło" name="password" [(ngModel)]="password" required>
+  
+  @if (errorMessage()) {
+    <div class="error-message">{{ errorMessage() }}</div>
+  }
+  
+  <button type="submit">Zaloguj!</button>
+  
+  <p class="register-link">
+    Nie masz konta? <a routerLink="/register">Zarejestruj się</a>
+  </p>
+  
+  <div class="demo-credentials">
+    <p><strong>Demo:</strong></p>
+    <p>Admin: admin / admin123</p>
+    <p>User: user / user123</p>
+  </div>
+</form>
