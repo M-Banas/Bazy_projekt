@@ -34,26 +34,9 @@ npm start
 
 Serwer domyślnie działa na porcie określonym w `.env` (np. `http://localhost:5201`).
 
-## Endpointy API
-
-### Champions
-- `GET /api/champions` - Pobierz wszystkich championów
-- `GET /api/champions/:id` - Pobierz championa po ID
-- `POST /api/champions` - Utwórz nowego championa
-- `PUT /api/champions/:id` - Aktualizuj championa
-- `DELETE /api/champions/:id` - Usuń championa
-
-### Users
-- `GET /api/users` - Pobierz listę użytkowników
-- `POST /api/users` - Utwórz nowego użytkownika
-
-### Statystyki i inne zasoby
-- `GET /api/stats/winrate` - Statystyki winrate championów
-- `GET /api/stats/top-items` - Najczęściej używane przedmioty
-- `GET /api/stats/patch-history` - Historia winrate po patchach
 
 ## Dodatkowe informacje
 
 - Plik `.env.example` zawiera przykładową konfigurację środowiska.
-- Klucz Riot API możesz uzyskać na https://developer.riotgames.com/
+- Klucz Riot API możesz uzyskać na https://developer.riotgames.com/  
 - Struktura bazy danych i widoki opisane są w plikach `database/init.sql`.
